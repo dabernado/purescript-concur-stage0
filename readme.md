@@ -20,7 +20,9 @@
 
 [Concur UI Lib](https://github.com/ajnsit/concur) is a brand new client side Web UI framework that explores an entirely new paradigm. It does not follow FRP (think Reflex or Reactive Banana), or Elm architecture, but aims to combine the best parts of both. This repo contains the Concur implementation for Purescript, using the React backend.
 
-### This is a port of Concur that uses [Stage0](https://github.com/Freak613/stage0) as the rendering backend instead of react, making the bundle size much smaller. Concur does not use any of the sophisticated react functions anyway.
+This is a port of Concur that uses [Stage0](https://github.com/Freak613/stage0) as the rendering backend instead of react, making the bundle size much smaller. Concur does not use any of the sophisticated react functions anyway.
+
+### THIS SOFTWARE IS EXPERIMENTAL. It will continue to go through significant API changes and will likely be error-prone until the API is standardized. Use at your own risk.
 
 ## Documentation
 
@@ -30,7 +32,9 @@ API documentation is [published on Pursuit](https://pursuit.purescript.org/packa
 
 ## Performance
 
-Purescript-Concur is reasonably light. The entire compressed JS bundle, including react and all libraries, for the entire example application in this repo clocks in at 15.3KB.
+Purescript-Concur is reasonably light. The entire compressed JS bundle, including stage0 and all libraries, for the entire example application in this repo clocks in at 15.3KB.
+
+Stage0 is also well known for being one of the fastest methods of DOM manipulation out there. In [js-framework-benchmark](https://github.com/krausest/js-framework-benchmark), it consistently ranks within the top 3 in all measures of performance. Benchmarks comparing concur-stage0 to other UI libraries and backends will be coming soon.
 
 ## Ports to other languages
 
