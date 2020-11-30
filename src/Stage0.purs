@@ -11,50 +11,52 @@ import Data.String (joinWith)
 import Data.Traversable (foldl)
 import Data.Tuple.Nested ((/\))
 import Effect (Effect)
-import Effect.Uncurried (EffectFn3, runEffectFn3)
+import Effect.Uncurried (EffectFn4, runEffectFn4)
 import Web.DOM (Document, Element, Node)
-import Web.DOM.Element (toNode)
-import Web.DOM.Node (childNodes)
-import Web.DOM.NodeList (toArray)
 import Web.DOM.NonElementParentNode (getElementById)
 import Web.HTML (window)
 import Web.HTML.HTMLDocument (toDocument, toNonElementParentNode)
 import Web.HTML.Window (document)
 
---foreign import h :: String -> Node
+foreign import _h :: String -> Node
 --foreign import collect :: Node -> Array Node
 
-foreign import outerHTML :: Node -> String
-foreign import _reconcile :: forall a. EffectFn3
+foreign import _reconcile :: forall a. EffectFn4
   Element
   (Array a)
   (Array a)
+  (VNode -> Node)
   Unit
 
 reconcile :: forall a.
     Element
  -> Array a
  -> Array a
+ -> (VNode -> Node)
  -> Effect Unit
-reconcile = runEffectFn3 _reconcile
+reconcile = runEffectFn4 _reconcile
 
-renderString :: Array VNode -> Array String
-renderString = map renderStringEl
+renderStringEl :: VNode -> String
+renderStringEl (Content ps s) = s
+renderStringEl Empty = ""
+renderStringEl (Leaf n []) = "<" <> n <> "/>"
+renderStringEl (Leaf n ps) =
+  "<" <> n <> " " <> (renderPropsString ps) <> "/>"
+renderStringEl (Node n [] vs) =
+  "<" <> n <> ">" <>
+    (foldl (<>) "" $ map renderStringEl vs) <> "</" <> n <> ">"
+renderStringEl (Node n ps vs) =
+  "<" <> n <> " " <> (renderPropsString ps) <> ">" <>
+    (foldl (<>) "" $ map renderStringEl vs) <> "</" <> n <> ">"
+
+renderPropsString :: Array Prop -> String
+renderPropsString = joinWith " " <<< map renderPropString
   where
-    renderStringEl (Content ps s) = s
-    renderStringEl Empty = ""
-    renderStringEl (Leaf n []) = "<" <> n <> "/>"
-    renderStringEl (Leaf n ps) =
-      "<" <> n <> " " <> (renderPropsString ps) <> "/>"
-    renderStringEl (Node n [] vs) =
-      "<" <> n <> ">" <>
-        (foldl (<>) "" $ renderString vs) <> "</" <> n <> ">"
-    renderStringEl (Node n ps vs) =
-      "<" <> n <> " " <> (renderPropsString ps) <> ">" <>
-        (foldl (<>) "" $ renderString vs) <> "</" <> n <> ">"
-    renderPropsString = joinWith " " <<< map renderPropString
     renderPropString (Primitive k v) = k <> "=" <> "\"" <> v <> "\""
     renderPropString (PHandler _ _) = ""
+
+renderNode :: VNode -> Node
+renderNode v = _h $ renderStringEl v
 
 runWidgetInDom :: ∀ a. String -> Widget HTML a -> Effect Unit
 runWidgetInDom elemId winit = do
@@ -69,9 +71,5 @@ runWidgetInDom elemId winit = do
   where
     run :: Element -> Document -> Effect Unit
     run node doc = do
-       children <- childNodes $ toNode node
-       cs <- toArray children
-       let old = map outerHTML cs
-       winit' /\ v <- dischargePartialEffect winit
-       let new = renderString v
-       void $ reconcile node old new
+       winit' /\ new <- dischargePartialEffect winit
+       void $ reconcile node [] new renderNode
